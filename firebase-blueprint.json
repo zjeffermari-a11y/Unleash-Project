@@ -1,0 +1,89 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Public profile information for an artist.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "displayName": { "type": "string", "description": "Artist's display name" },
+        "photoURL": { "type": "string", "description": "URL to artist's avatar" },
+        "bio": { "type": "string", "description": "Short biography" },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "User role" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "role", "createdAt"]
+    },
+    "Artwork": {
+      "title": "Artwork",
+      "description": "An individual piece of art uploaded by a user.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Title of the artwork" },
+        "description": { "type": "string", "description": "Description of the artwork" },
+        "category": { "type": "string", "enum": ["Painting", "Sculpting", "Digital", "Photography", "Other"], "description": "Category of the artwork" },
+        "imageUrl": { "type": "string", "description": "URL of the artwork image" },
+        "privacy": { "type": "string", "enum": ["public", "private"], "description": "Privacy setting" },
+        "authorId": { "type": "string", "description": "UID of the artist" },
+        "authorName": { "type": "string", "description": "Display name of the artist" },
+        "authorPhoto": { "type": "string", "description": "Photo URL of the artist" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "category", "imageUrl", "privacy", "authorId", "authorName", "createdAt"]
+    },
+    "Event": {
+      "title": "Event or Workshop",
+      "description": "An event or workshop hosted by a user.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Title of the event" },
+        "description": { "type": "string", "description": "Description of the event" },
+        "date": { "type": "string", "format": "date-time", "description": "Date of the event" },
+        "location": { "type": "string", "description": "Location or Virtual link" },
+        "hostId": { "type": "string", "description": "UID of the host" },
+        "hostName": { "type": "string", "description": "Display name of the host" },
+        "imageUrl": { "type": "string", "description": "URL of the event image" },
+        "type": { "type": "string", "enum": ["Event", "Workshop"], "description": "Type of event" },
+        "status": { "type": "string", "enum": ["upcoming", "ongoing", "past"], "description": "Status of event" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "date", "location", "hostId", "hostName", "imageUrl", "type", "status", "createdAt"]
+    },
+    "MarketItem": {
+      "title": "Marketplace Item",
+      "description": "An artwork listed for sale.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Title of the item" },
+        "description": { "type": "string", "description": "Description of the item" },
+        "price": { "type": "number", "description": "Price of the item" },
+        "category": { "type": "string", "enum": ["Painting", "Sculpting", "Digital", "Photography", "Other"], "description": "Category of the item" },
+        "type": { "type": "string", "enum": ["Physical", "Digital"], "description": "Physical or Digital asset" },
+        "sellerId": { "type": "string", "description": "UID of the seller" },
+        "sellerName": { "type": "string", "description": "Display name of the seller" },
+        "imageUrl": { "type": "string", "description": "URL of the item image" },
+        "status": { "type": "string", "enum": ["available", "sold"], "description": "Availability status" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "price", "category", "type", "sellerId", "sellerName", "imageUrl", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores artist profiles."
+    },
+    "/artworks/{artworkId}": {
+      "schema": { "$ref": "#/entities/Artwork" },
+      "description": "Stores uploaded artworks."
+    },
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/entities/Event" },
+      "description": "Stores community events and workshops."
+    },
+    "/marketItems/{itemId}": {
+      "schema": { "$ref": "#/entities/MarketItem" },
+      "description": "Stores marketplace items."
+    }
+  }
+}
