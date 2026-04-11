@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { doc, getDoc, collection, query, where, orderBy, getDocs, increment, updateDoc } from 'firebase/firestore';
@@ -36,22 +36,47 @@ export default function ArtworkDetail() {
   const [commentInput, setCommentInput] = useState('');
   const [showComments, setShowComments] = useState(false);
 
+  // View-count guard:
+  // - useRef stops React StrictMode from firing the effect twice per mount
+  // - sessionStorage stops refresh spam (cleared when the tab closes, so
+  //   returning users in a new session are counted correctly)
+  const hasCountedView = useRef(false);
+
   const { hasLiked, likeCount, toggling: likeToggling, toggle: toggleLike } = useLike(artworkId!);
   const { isFollowing, followerCount, toggling: followToggling, toggle: toggleFollow } = useFollow(artwork?.authorId || '');
   const { comments, loading: commentsLoading, submitting, addComment } = useComments(artworkId!);
   const addItem = useCartStore((s) => s.addItem);
   const cartItems = useCartStore((s) => s.items);
 
-  // Fetch artwork doc
+  // Fetch artwork doc + guard view count
   useEffect(() => {
     if (!artworkId) return;
+
+    // ── View-count guards run SYNCHRONOUSLY before any async work ──────────
+    // This is critical: if guards were inside .then(), two concurrent promises
+    // (from StrictMode double-fire) could both pass before either sets the flag.
+    //
+    // Guard 1 — useRef:         blocks double-fire within ONE component instance
+    // Guard 2 — sessionStorage: blocks refresh spam in the same browser session
+    //                           (sessionStorage persists across refreshes but
+    //                            clears when the tab is closed — correct behavior)
+    const sessionKey = `viewed_${artworkId}`;
+    const shouldCount = !hasCountedView.current && !sessionStorage.getItem(sessionKey);
+    if (shouldCount) {
+      // Mark BOTH guards immediately, before the async Firestore call
+      hasCountedView.current = true;
+      sessionStorage.setItem(sessionKey, '1');
+    }
+
     setLoading(true);
     getDoc(doc(db, 'artworks', artworkId))
       .then((snap) => {
         if (snap.exists()) {
           setArtwork({ id: snap.id, ...snap.data() });
-          // Increment view count (fire and forget)
-          updateDoc(doc(db, 'artworks', artworkId), { viewCount: increment(1) }).catch(() => {});
+          // Only increment if the synchronous guard above cleared it
+          if (shouldCount) {
+            updateDoc(doc(db, 'artworks', artworkId), { viewCount: increment(1) }).catch(() => {});
+          }
         }
       })
       .finally(() => setLoading(false));
@@ -179,11 +204,10 @@ export default function ArtworkDetail() {
                   whileTap={{ scale: 0.95 }}
                   onClick={toggleLike}
                   disabled={likeToggling}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold backdrop-blur-md transition-colors ${
-                    hasLiked
-                      ? 'bg-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)]'
-                      : 'bg-black/50 text-white hover:bg-red-500/80'
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold backdrop-blur-md transition-colors ${hasLiked
+                    ? 'bg-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)]'
+                    : 'bg-black/50 text-white hover:bg-red-500/80'
+                    }`}
                 >
                   <Heart className={`w-4 h-4 ${hasLiked ? 'fill-current' : ''}`} />
                   {likeCount}
@@ -365,11 +389,10 @@ export default function ArtworkDetail() {
                   whileTap={{ scale: 0.97 }}
                   onClick={toggleFollow}
                   disabled={followToggling || !user}
-                  className={`w-full py-2.5 rounded-xl text-sm font-bold tracking-widest uppercase transition-colors flex items-center justify-center gap-2 ${
-                    isFollowing
-                      ? 'bg-muted border border-border text-foreground hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-500'
-                      : 'bg-amber-500 text-black hover:bg-amber-600'
-                  }`}
+                  className={`w-full py-2.5 rounded-xl text-sm font-bold tracking-widest uppercase transition-colors flex items-center justify-center gap-2 ${isFollowing
+                    ? 'bg-muted border border-border text-foreground hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-500'
+                    : 'bg-amber-500 text-black hover:bg-amber-600'
+                    }`}
                 >
                   {isFollowing ? (
                     <><UserCheck className="w-4 h-4" /> Following</>
@@ -416,11 +439,10 @@ export default function ArtworkDetail() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handleAddToCart}
-                  className={`w-full py-3 rounded-xl text-sm font-bold tracking-widest uppercase flex items-center justify-center gap-2 transition-colors ${
-                    cartItems.some((c) => c.id === marketItem.id)
-                      ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30 cursor-default'
-                      : 'bg-amber-500 text-black hover:bg-amber-600'
-                  }`}
+                  className={`w-full py-3 rounded-xl text-sm font-bold tracking-widest uppercase flex items-center justify-center gap-2 transition-colors ${cartItems.some((c) => c.id === marketItem.id)
+                    ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30 cursor-default'
+                    : 'bg-amber-500 text-black hover:bg-amber-600'
+                    }`}
                 >
                   <ShoppingBag className="w-4 h-4" />
                   {cartItems.some((c) => c.id === marketItem.id) ? 'In Cart ✓' : 'Add to Cart'}
