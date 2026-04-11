@@ -29,7 +29,7 @@ export default function Hero() {
     <section 
       ref={containerRef} 
       id="home" 
-      className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden bg-[#050505]"
+      className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden bg-background"
       style={{ perspective: '1000px' }}
     >
       {/* Noise Overlay */}
@@ -65,10 +65,10 @@ export default function Hero() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md mb-8"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-foreground/10 dark:border-white/10 bg-foreground/5 dark:bg-white/5 backdrop-blur-md mb-8"
         >
           <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-          <span className="text-xs font-medium tracking-widest uppercase text-gray-300">The New Standard for Artists</span>
+          <span className="text-xs font-medium tracking-widest uppercase text-muted-foreground dark:text-gray-300">The New Standard for Artists</span>
         </motion.div>
 
         <div className="overflow-hidden mb-4">
@@ -76,7 +76,7 @@ export default function Hero() {
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-            className="text-[12vw] md:text-[8vw] leading-[0.85] font-display font-bold tracking-tighter text-white"
+            className="text-[12vw] md:text-[8vw] leading-[0.85] font-display font-bold tracking-tighter text-foreground dark:text-white"
           >
             CLAIM YOUR
           </motion.h1>
@@ -96,7 +96,7 @@ export default function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.8 }}
-          className="text-lg md:text-xl text-gray-400 mb-12 max-w-2xl mx-auto font-light"
+          className="text-lg md:text-xl text-muted-foreground dark:text-gray-400 mb-12 max-w-2xl mx-auto font-light"
         >
           Showcase your work. Build your name. Connect with a globally creative community redefining digital and physical art.
         </motion.p>
@@ -119,17 +119,15 @@ export default function Hero() {
           
           <motion.button 
             onClick={() => document.getElementById('gallery')?.scrollIntoView({ behavior: 'smooth' })}
-            whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.1)" }}
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="px-8 py-4 text-white font-bold rounded-full text-sm tracking-widest uppercase border border-white/20 transition-all duration-300"
+            className="px-8 py-4 text-foreground dark:text-white font-bold rounded-full text-sm tracking-widest uppercase border border-foreground/20 dark:border-white/20 hover:bg-foreground/5 dark:hover:bg-white/10 transition-all duration-300"
           >
             Explore Gallery
           </motion.button>
         </motion.div>
       </div>
 
-      {/* Decorative Bottom Gradient */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#050505] to-transparent z-20 pointer-events-none" />
     </section>
   );
 }

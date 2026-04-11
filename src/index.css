@@ -15,22 +15,30 @@ html {
   scroll-behavior: smooth;
 }
 
-body {
-  background-color: #050505;
-  color: #ffffff;
-  font-family: var(--font-sans);
-  overflow-x: hidden;
-}
+/* 
+ * NOTE: Do NOT hardcode body background/color here.
+ * All colors must flow from CSS variables so that the theme toggle works globally.
+ * The @layer base block below handles this via bg-background and text-foreground.
+ */
 
 h1, h2, h3, h4, h5, h6, .font-display {
   font-family: var(--font-display);
 }
 
+/* Glass panel adapts to both modes */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dark .glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.light .glass-panel, :root:not(.dark) .glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.07);
 }
 
 .text-glow {
@@ -45,20 +53,17 @@ h1, h2, h3, h4, h5, h6, .font-display {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
-/* Custom scrollbar for a sleek look */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #050505;
-}
-::-webkit-scrollbar-thumb {
-  background: #222;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #444;
-}
+/* Scrollbar — dark mode */
+.dark ::-webkit-scrollbar { width: 6px; }
+.dark ::-webkit-scrollbar-track { background: oklch(0.145 0 0); }
+.dark ::-webkit-scrollbar-thumb { background: oklch(0.3 0 0); border-radius: 4px; }
+.dark ::-webkit-scrollbar-thumb:hover { background: oklch(0.75 0.15 75); }
+
+/* Scrollbar — light mode */
+:root:not(.dark) ::-webkit-scrollbar { width: 6px; }
+:root:not(.dark) ::-webkit-scrollbar-track { background: oklch(0.97 0.01 75); }
+:root:not(.dark) ::-webkit-scrollbar-thumb { background: oklch(0.85 0.02 75); border-radius: 4px; }
+:root:not(.dark) ::-webkit-scrollbar-thumb:hover { background: oklch(0.75 0.15 75); }
 
 @theme inline {
   --font-heading: var(--font-sans);
@@ -103,73 +108,83 @@ h1, h2, h3, h4, h5, h6, .font-display {
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ==========================================
+   LIGHT MODE (default :root)
+   Premium warm ivory palette — feels elegant
+   like a high-end art gallery or magazine.
+   ========================================== */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --background: oklch(0.98 0.008 75);        /* warm ivory */
+  --foreground: oklch(0.18 0.01 60);         /* rich charcoal */
+  --card: oklch(1 0 0);                      /* pure white card */
+  --card-foreground: oklch(0.18 0.01 60);
+  --popover: oklch(0.995 0.005 75);
+  --popover-foreground: oklch(0.18 0.01 60);
+  --primary: oklch(0.72 0.18 75);            /* amber primary */
+  --primary-foreground: oklch(0.12 0 0);     /* near-black text on amber */
+  --secondary: oklch(0.93 0.015 75);         /* warm light amber tint */
+  --secondary-foreground: oklch(0.25 0.01 60);
+  --muted: oklch(0.93 0.01 75);
+  --muted-foreground: oklch(0.50 0.01 60);   /* medium warm grey */
+  --accent: oklch(0.94 0.03 75);
+  --accent-foreground: oklch(0.25 0.01 60);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --border: oklch(0.88 0.015 75);            /* warm light border */
+  --input: oklch(0.90 0.015 75);
+  --ring: oklch(0.72 0.18 75);              /* amber ring */
+  --chart-1: oklch(0.72 0.18 75);
+  --chart-2: oklch(0.60 0.14 200);
+  --chart-3: oklch(0.55 0.12 160);
+  --chart-4: oklch(0.65 0.16 320);
+  --chart-5: oklch(0.50 0.12 30);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: oklch(0.96 0.012 75);
+  --sidebar-foreground: oklch(0.18 0.01 60);
+  --sidebar-primary: oklch(0.72 0.18 75);
+  --sidebar-primary-foreground: oklch(0.12 0 0);
+  --sidebar-accent: oklch(0.92 0.02 75);
+  --sidebar-accent-foreground: oklch(0.18 0.01 60);
+  --sidebar-border: oklch(0.88 0.015 75);
+  --sidebar-ring: oklch(0.72 0.18 75);
 }
 
+/* ==========================================
+   DARK MODE (.dark class on <html>)
+   Rich deep slate palette — the default 
+   premium dark experience for creatives.
+   ========================================== */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.13 0.005 260);       /* very deep cool slate, not pure black */
+  --foreground: oklch(0.94 0.005 260);       /* near-white with a cool tint */
+  --card: oklch(0.18 0.005 260);             /* slightly elevated card */
+  --card-foreground: oklch(0.94 0.005 260);
+  --popover: oklch(0.18 0.006 260);
+  --popover-foreground: oklch(0.94 0.005 260);
+  --primary: oklch(0.75 0.18 75);            /* amber primary */
+  --primary-foreground: oklch(0.10 0 0);
+  --secondary: oklch(0.22 0.005 260);
+  --secondary-foreground: oklch(0.94 0.005 260);
+  --muted: oklch(0.22 0.005 260);
+  --muted-foreground: oklch(0.60 0.005 260);
+  --accent: oklch(0.22 0.006 260);
+  --accent-foreground: oklch(0.94 0.005 260);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.75 0.18 75);              /* amber ring */
+  --chart-1: oklch(0.75 0.18 75);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar: oklch(0.16 0.005 260);
+  --sidebar-foreground: oklch(0.94 0.005 260);
+  --sidebar-primary: oklch(0.75 0.18 75);
+  --sidebar-primary-foreground: oklch(0.10 0 0);
+  --sidebar-accent: oklch(0.22 0.005 260);
+  --sidebar-accent-foreground: oklch(0.94 0.005 260);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.75 0.18 75);
 }
 
 @layer base {
@@ -178,6 +193,8 @@ h1, h2, h3, h4, h5, h6, .font-display {
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    overflow-x: hidden;
   }
   html {
     @apply font-sans;

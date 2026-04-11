@@ -25,7 +25,7 @@ function Counter({ from, to }: { from: number, to: number }) {
 
 export default function Community() {
   return (
-    <section id="community" className="py-32 bg-[#050505] relative overflow-hidden">
+    <section id="community" className="py-32 bg-background relative overflow-hidden">
       {/* Noise Overlay */}
       <div className="absolute inset-0 bg-noise opacity-[0.04] z-10 pointer-events-none mix-blend-overlay" />
       
@@ -44,10 +44,10 @@ export default function Community() {
           <h2 className="text-sm md:text-base font-bold text-amber-500 mb-6 tracking-[0.2em] uppercase">
             The Global Network
           </h2>
-          <div className="text-7xl md:text-[12rem] font-display font-bold text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/20 leading-none mb-4 tracking-tighter">
+          <div className="text-7xl md:text-[12rem] font-display font-bold text-transparent bg-clip-text bg-gradient-to-b from-foreground via-foreground to-foreground/20 dark:from-white dark:via-white dark:to-white/20 leading-none mb-4 tracking-tighter">
             <Counter from={0} to={1000000} />
           </div>
-          <h3 className="text-3xl md:text-5xl font-display font-bold text-white tracking-tight">
+          <h3 className="text-3xl md:text-5xl font-display font-bold text-foreground dark:text-white tracking-tight">
             Creators Worldwide.
           </h3>
         </motion.div>

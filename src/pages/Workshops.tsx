@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { collection, query, where, getDocs, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
-import Navbar from '../components/Navbar';
+
 import { Users, MapPin, Plus, X, Upload, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -110,7 +110,7 @@ export default function Workshops() {
       setError('Please select an image for the workshop.');
       return;
     }
-    
+
     setSubmitting(true);
     setError('');
 
@@ -128,10 +128,10 @@ export default function Workshops() {
         hostName: user.displayName || 'Anonymous',
         imageUrl: imagePreview,
         type: 'Workshop',
-        status: 'upcoming', // Default to upcoming
+        status: 'upcoming',
         createdAt: serverTimestamp(),
       });
-      
+
       setIsHostModalOpen(false);
       setTitle('');
       setDescription('');
@@ -148,12 +148,24 @@ export default function Workshops() {
   };
 
   return (
-    <div className="bg-[#050505] min-h-screen font-sans text-white">
-      <Navbar />
-      
-      <main className="pt-40 pb-24 container mx-auto px-6">
+    // Semantic root — bg-background and text-foreground adapt to light/dark automatically
+    <div className="bg-background min-h-screen font-sans text-foreground relative">
+
+      {/* Background image layer — always subtle and decorative */}
+      <div className="absolute inset-0 opacity-20 dark:opacity-25 pointer-events-none z-0">
+        <img
+          src="https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&w=1920"
+          alt="Modern Workspace"
+          className="w-full h-full object-cover grayscale"
+          referrerPolicy="no-referrer"
+        />
+        {/* Gradient fades into the themed background color */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/60 to-background" />
+      </div>
+
+      <main className="pt-40 pb-24 container mx-auto px-6 relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-center mb-16 gap-6">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             className="text-center md:text-left"
@@ -161,7 +173,7 @@ export default function Workshops() {
             <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tighter mb-4">
               CREATIVE <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">WORKSHOPS</span>
             </h1>
-            <p className="text-gray-400 font-light max-w-xl">
+            <p className="text-muted-foreground font-light max-w-xl drop-shadow-md">
               Learn new skills or share your expertise with the community.
             </p>
           </motion.div>
@@ -171,7 +183,7 @@ export default function Workshops() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               onClick={() => setIsHostModalOpen(true)}
-              className="px-6 py-3 bg-amber-500 text-black font-bold rounded-full text-sm tracking-widest uppercase hover:bg-white transition-colors flex items-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+              className="px-6 py-3 bg-amber-500 text-black font-bold rounded-full text-sm tracking-widest uppercase hover:bg-foreground hover:text-background transition-colors flex items-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
             >
               <Plus className="w-4 h-4" /> Host Workshop
             </motion.button>
@@ -179,16 +191,15 @@ export default function Workshops() {
         </div>
 
         {/* Filters */}
-        <div className="flex justify-center md:justify-start gap-4 mb-12 border-b border-white/10 pb-4">
+        <div className="flex justify-center md:justify-start gap-4 mb-12 border-b border-border pb-4">
           {['upcoming', 'ongoing', 'past'].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-6 py-2 rounded-full font-bold text-sm tracking-widest uppercase transition-colors ${
-                filter === f 
-                  ? 'bg-white text-black' 
-                  : 'text-gray-500 hover:text-white hover:bg-white/5'
-              }`}
+              className={`px-6 py-2 rounded-full font-bold text-sm tracking-widest uppercase transition-colors ${filter === f
+                ? 'bg-foreground text-background'
+                : 'text-muted-foreground hover:text-foreground hover:bg-foreground/10'
+                }`}
             >
               {f}
             </button>
@@ -201,48 +212,49 @@ export default function Workshops() {
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
           </div>
         ) : workshops.length === 0 ? (
-          <div className="text-center py-32 glass-panel rounded-3xl">
-            <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg font-light">No {filter} workshops found.</p>
+          <div className="text-center py-32 bg-card rounded-3xl backdrop-blur-sm border border-border">
+            <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground text-lg font-light">No {filter} workshops found.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {workshops.map((workshop, index) => (
-              <motion.div 
+              <motion.div
                 key={workshop.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden group hover:border-amber-500/50 transition-colors"
+                className="bg-card backdrop-blur-sm border border-border rounded-3xl overflow-hidden group hover:border-amber-500/50 transition-colors shadow-lg"
               >
                 <div className="h-48 overflow-hidden relative">
-                  <img 
-                    src={workshop.imageUrl} 
-                    alt={workshop.title} 
+                  <img
+                    src={workshop.imageUrl}
+                    alt={workshop.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
+                  {/* Badge on photo — stays dark for contrast */}
                   <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase text-amber-500">
                     {workshop.status}
                   </div>
                 </div>
                 <div className="p-6">
-                  <h3 className="text-2xl font-display font-bold mb-2 text-white">{workshop.title}</h3>
-                  <p className="text-gray-400 text-sm mb-4 line-clamp-2">{workshop.description}</p>
-                  
+                  <h3 className="text-2xl font-display font-bold mb-2 text-foreground">{workshop.title}</h3>
+                  <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{workshop.description}</p>
+
                   <div className="space-y-2 mb-6">
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="w-4 h-4 text-amber-500" />
                       {workshop.date?.toDate ? workshop.date.toDate().toLocaleDateString() : new Date(workshop.date).toLocaleDateString()}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <MapPin className="w-4 h-4 text-amber-500" />
                       {workshop.location}
                     </div>
                   </div>
-                  
-                  <div className="flex items-center justify-between pt-4 border-t border-white/10">
+
+                  <div className="flex items-center justify-between pt-4 border-t border-border">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 uppercase tracking-widest">Hosted by</span>
+                      <span className="text-xs text-muted-foreground uppercase tracking-widest">Hosted by</span>
                       <Link to={`/profile/${workshop.hostId}`} className="text-sm font-bold hover:text-amber-500 transition-colors">
                         {workshop.hostName}
                       </Link>
@@ -259,32 +271,32 @@ export default function Workshops() {
       {isHostModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsHostModalOpen(false)} />
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-3xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="relative w-full max-w-2xl bg-card border border-border rounded-3xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto"
           >
-            <button 
+            <button
               onClick={() => setIsHostModalOpen(false)}
-              className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors"
+              className="absolute top-6 right-6 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
-            
-            <h2 className="text-3xl font-display font-bold mb-8">Host a Workshop</h2>
-            
+
+            <h2 className="text-3xl font-display font-bold mb-8 text-foreground">Host a Workshop</h2>
+
             {error && (
-              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm">
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-sm">
                 {error}
               </div>
             )}
 
             <form onSubmit={handleHostSubmit} className="space-y-6">
               <div>
-                <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2">Workshop Image</label>
-                <div className="relative h-48 border-2 border-dashed border-white/20 rounded-2xl overflow-hidden group hover:border-amber-500/50 transition-colors">
-                  <input 
-                    type="file" 
+                <label className="block text-xs font-bold tracking-widest uppercase text-muted-foreground mb-2">Workshop Image</label>
+                <div className="relative h-48 border-2 border-dashed border-border rounded-2xl overflow-hidden group hover:border-amber-500/50 transition-colors">
+                  <input
+                    type="file"
                     onChange={handleImageChange}
                     accept="image/*"
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -292,7 +304,7 @@ export default function Workshops() {
                   {imagePreview ? (
                     <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
                       <Upload className="w-8 h-8 mb-2 group-hover:text-amber-500 transition-colors" />
                       <span className="text-sm">Click or drag to upload (Max 10MB)</span>
                     </div>
@@ -302,58 +314,58 @@ export default function Workshops() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2">Workshop Title</label>
-                  <input 
+                  <label className="block text-xs font-bold tracking-widest uppercase text-muted-foreground mb-2">Workshop Title</label>
+                  <input
                     required
-                    type="text" 
+                    type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-amber-500 outline-none"
+                    className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:border-amber-500 outline-none placeholder:text-muted-foreground"
                     placeholder="e.g. Digital Art Masterclass"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2">Date & Time</label>
-                  <input 
+                  <label className="block text-xs font-bold tracking-widest uppercase text-muted-foreground mb-2">Date & Time</label>
+                  <input
                     required
-                    type="datetime-local" 
+                    type="datetime-local"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-amber-500 outline-none [color-scheme:dark]"
+                    className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:border-amber-500 outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2">Location (or Virtual Link)</label>
-                <input 
+                <label className="block text-xs font-bold tracking-widest uppercase text-muted-foreground mb-2">Location (or Virtual Link)</label>
+                <input
                   required
-                  type="text" 
+                  type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-amber-500 outline-none"
+                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:border-amber-500 outline-none placeholder:text-muted-foreground"
                   placeholder="e.g. 123 Gallery St, NY or https://zoom.us/..."
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2">Description</label>
-                <textarea 
+                <label className="block text-xs font-bold tracking-widest uppercase text-muted-foreground mb-2">Description</label>
+                <textarea
                   required
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-amber-500 outline-none h-32 resize-none"
+                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:border-amber-500 outline-none h-32 resize-none placeholder:text-muted-foreground"
                   placeholder="Describe your workshop..."
                 />
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={submitting}
-                className="w-full py-4 bg-amber-500 text-black font-bold rounded-xl hover:bg-white transition-colors disabled:opacity-50 flex justify-center items-center"
+                className="w-full py-4 bg-amber-500 text-black font-bold rounded-xl hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 flex justify-center items-center"
               >
                 {submitting ? (
-                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 ) : (
                   'Host Workshop'
                 )}

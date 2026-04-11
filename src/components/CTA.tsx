@@ -16,13 +16,18 @@ export default function CTA() {
   };
 
   return (
-    <section id="login" className="py-40 bg-[#050505] relative flex items-center justify-center overflow-hidden">
+    <section id="login" className="py-40 bg-background relative flex items-center justify-center overflow-hidden">
       {/* Noise Overlay */}
       <div className="absolute inset-0 bg-noise opacity-[0.04] z-10 pointer-events-none mix-blend-overlay" />
-      
+
       <div className="absolute inset-0 opacity-40 mix-blend-luminosity">
-        <img src="https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?q=80&w=1920&auto=format&fit=crop" alt="Art Supplies and Canvas" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent" />
+        <img
+          src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1920&auto=format&fit=crop"
+          alt="Neon Digital Gallery"
+          className="w-full h-full object-cover blur-[8px] opacity-30"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
       </div>
 
       {/* Abstract Background Elements */}
@@ -38,18 +43,18 @@ export default function CTA() {
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           className="max-w-4xl mx-auto"
         >
-          <h2 className="text-6xl md:text-8xl font-display font-bold text-white mb-8 leading-[1.1] tracking-tight">
-            Ready to Leave <br/> 
+          <h2 className="text-6xl md:text-8xl font-display font-bold text-foreground dark:text-white mb-8 leading-[1.1] tracking-tight">
+            Ready to Leave <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-red-500 italic pr-4">
               Your Mark?
             </span>
           </h2>
-          
-          <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
+
+          <p className="text-xl text-muted-foreground dark:text-gray-400 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
             Join the most exclusive network of digital and traditional artists. Showcase your portfolio to the world.
           </p>
-          
-          <motion.button 
+
+          <motion.button
             onClick={handleAction}
             whileHover={{ scale: 1.05, boxShadow: "0 0 40px rgba(245,158,11,0.4)" }}
             whileTap={{ scale: 0.95 }}

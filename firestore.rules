@@ -139,6 +139,26 @@ service cloud.firestore {
              data.createdAt is timestamp;
     }
 
+    // ── Order validator ────────────────────────────────────────────────────────
+    // Ensures the order document has the required shape before it is written.
+    // Defence-in-depth: client-side cart store also validates before calling addDoc.
+    function isValidOrder() {
+      let data = request.resource.data;
+      return hasRequiredFields(['buyerId', 'buyerName', 'items', 'total', 'status', 'createdAt']) &&
+             // Buyer identity — must match the authenticated user (prevents spoofing)
+             data.buyerId == request.auth.uid &&
+             validStringLength('buyerName', 1, 500) &&
+             // Items must be a non-empty list
+             data.items is list &&
+             data.items.size() > 0 &&
+             // Total must be a positive monetary value
+             data.total is number &&
+             data.total > 0 &&
+             // Status is always 'pending' on creation
+             data.status == 'pending' &&
+             data.createdAt is timestamp;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -174,6 +194,23 @@ service cloud.firestore {
                     request.resource.data.createdAt == resource.data.createdAt;
                     
       allow delete: if isDocOwner() || isAdmin();
+
+      // ── Likes subcollection ──────────────────────────────────────────
+      // Publicly readable so anyone can see like counts (onSnapshot).
+      // A user can only write/delete their own like document.
+      match /likes/{userId} {
+        allow read: if true;
+        allow write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      // ── Comments subcollection ───────────────────────────────────────
+      // Publicly readable; authenticated users can post.
+      // Only the comment author can delete their own comment.
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isAuthenticated();
+        allow delete: if isAuthenticated() && request.auth.uid == resource.data.authorId;
+      }
     }
 
     match /events/{eventId} {
@@ -205,5 +242,44 @@ service cloud.firestore {
                     
       allow delete: if isAuthenticated() && (request.auth.uid == resource.data.sellerId || isAdmin());
     }
+
+    // ── Orders collection ──────────────────────────────────────────────────────
+    // Security model:
+    //   READ  — users can only fetch their own orders (buyerId == auth.uid)
+    //   CREATE — users can only create orders for themselves, validated by isValidOrder()
+    //   UPDATE — permanently denied; orders are immutable financial records
+    //   DELETE — permanently denied; orders must be preserved for audit trails
+    match /orders/{orderId} {
+      // Scope reads to the document owner only — prevents users seeing other buyers' orders
+      allow read: if isAuthenticated() &&
+                    request.auth.uid == resource.data.buyerId;
+
+      // Allow order creation only when:
+      //   1. User is authenticated
+      //   2. buyerId in the document matches the requesting user's UID
+      //   3. The document shape is valid (isValidOrder)
+      allow create: if isAuthenticated() &&
+                      request.resource.data.buyerId == request.auth.uid &&
+                      isValidOrder();
+
+      // Hard deny — orders cannot be modified or removed after creation
+      allow update: if false;
+      allow delete: if false;
+    }
+    // ── Follows collection ─────────────────────────────────────────────────────
+    // Security model:
+    //   READ   — publicly readable so follower/following counts work for everyone
+    //   CREATE — users can only create follow docs where followerId == their own uid
+    //   DELETE — users can only delete their own follow docs
+    //   UPDATE — permanently denied; follows are binary (exist or not)
+    match /follows/{followId} {
+      allow read: if true;
+      allow create: if isAuthenticated() &&
+                      request.resource.data.followerId == request.auth.uid;
+      allow delete: if isAuthenticated() &&
+                      resource.data.followerId == request.auth.uid;
+      allow update: if false;
+    }
   }
 }
+

@@ -3,12 +3,17 @@ import { motion } from 'motion/react';
 import { collection, query, where, getDocs, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
-import Navbar from '../components/Navbar';
+import { useCartStore } from '../store/useCartStore';
+import { toast } from 'sonner';
+
 import { ShoppingBag, Plus, X, Upload, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+
 export default function Marketplace() {
   const { user } = useAuth();
+  const addItem = useCartStore((s) => s.addItem);
+  const cartItems = useCartStore((s) => s.items);
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -111,7 +116,7 @@ export default function Marketplace() {
       setError('Please select an image for the item.');
       return;
     }
-    
+
     setSubmitting(true);
     setError('');
 
@@ -132,7 +137,7 @@ export default function Marketplace() {
         status: 'available',
         createdAt: serverTimestamp(),
       });
-      
+
       setIsSellModalOpen(false);
       setTitle('');
       setDescription('');
@@ -149,17 +154,28 @@ export default function Marketplace() {
     }
   };
 
-  const filteredItems = items.filter(item => 
+  const filteredItems = items.filter(item =>
     categoryFilter === 'All' || item.category === categoryFilter
   );
 
   return (
-    <div className="bg-[#050505] min-h-screen font-sans text-white">
-      <Navbar />
-      
-      <main className="pt-40 pb-24 container mx-auto px-6">
+    // Semantic root — bg-background and text-foreground adapt to light/dark automatically
+    <div className="bg-background min-h-screen font-sans text-foreground relative">
+      {/* Background image layer — always subtle and decorative */}
+      <div className="absolute inset-0 opacity-20 dark:opacity-25 pointer-events-none z-0">
+        <img
+          src="https://images.unsplash.com/photo-1531058020387-3be344556be6?q=80&w=2070&auto=format&fit=crop"
+          alt="Physical Art Gallery Interior"
+          className="w-full h-full object-cover grayscale"
+          referrerPolicy="no-referrer"
+        />
+        {/* Gradient fades into the themed background color */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/60 to-background" />
+      </div>
+
+      <main className="pt-40 pb-24 container mx-auto px-6 relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-center mb-16 gap-6">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             className="text-center md:text-left"
@@ -167,7 +183,7 @@ export default function Marketplace() {
             <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tighter mb-4">
               THE <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">MARKETPLACE</span>
             </h1>
-            <p className="text-gray-400 font-light max-w-xl">
+            <p className="text-muted-foreground font-light max-w-xl drop-shadow-md">
               Buy and sell physical and digital art from creators worldwide.
             </p>
           </motion.div>
@@ -177,7 +193,7 @@ export default function Marketplace() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               onClick={() => setIsSellModalOpen(true)}
-              className="px-6 py-3 bg-amber-500 text-black font-bold rounded-full text-sm tracking-widest uppercase hover:bg-white transition-colors flex items-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+              className="px-6 py-3 bg-amber-500 text-black font-bold rounded-full text-sm tracking-widest uppercase hover:bg-foreground hover:text-background transition-colors flex items-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
             >
               <Plus className="w-4 h-4" /> Sell Artwork
             </motion.button>
@@ -185,16 +201,15 @@ export default function Marketplace() {
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-2 overflow-x-auto w-full mb-12 border-b border-white/10 pb-4 no-scrollbar">
+        <div className="flex items-center gap-2 overflow-x-auto w-full mb-12 border-b border-border pb-4 no-scrollbar">
           {['All', 'Painting', 'Sculpting', 'Digital', 'Photography', 'Other'].map(cat => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`px-6 py-2 rounded-full font-bold text-sm tracking-widest uppercase whitespace-nowrap transition-colors ${
-                categoryFilter === cat 
-                  ? 'bg-white text-black' 
-                  : 'text-gray-500 hover:text-white hover:bg-white/5'
-              }`}
+              className={`px-6 py-2 rounded-full font-bold text-sm tracking-widest uppercase whitespace-nowrap transition-colors ${categoryFilter === cat
+                  ? 'bg-foreground text-background'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-foreground/10'
+                }`}
             >
               {cat}
             </button>
@@ -207,26 +222,27 @@ export default function Marketplace() {
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="text-center py-32 glass-panel rounded-3xl">
-            <ShoppingBag className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg font-light">No items found in this category.</p>
+          <div className="text-center py-32 bg-card rounded-3xl backdrop-blur-sm border border-border">
+            <ShoppingBag className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground text-lg font-light">No items found in this category.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredItems.map((item, index) => (
-              <motion.div 
+              <motion.div
                 key={item.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden group hover:border-amber-500/50 transition-colors flex flex-col"
+                className="bg-card backdrop-blur-sm border border-border rounded-3xl overflow-hidden group hover:border-amber-500/50 transition-colors flex flex-col shadow-lg"
               >
                 <div className="h-64 overflow-hidden relative">
-                  <img 
-                    src={item.imageUrl} 
-                    alt={item.title} 
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
+                  {/* Badge on photo — stays dark for contrast on image */}
                   <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase text-white">
                     {item.type}
                   </div>
@@ -241,18 +257,42 @@ export default function Marketplace() {
                       {item.category}
                     </span>
                   </div>
-                  <h3 className="text-xl font-display font-bold mb-2 text-white">{item.title}</h3>
-                  <p className="text-gray-400 text-sm mb-6 line-clamp-2 flex-grow">{item.description}</p>
-                  
-                  <div className="flex items-center justify-between pt-4 border-t border-white/10 mt-auto">
+                  <h3 className="text-xl font-display font-bold mb-2 text-foreground">{item.title}</h3>
+                  <p className="text-muted-foreground text-sm mb-6 line-clamp-2 flex-grow">{item.description}</p>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-border mt-auto">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 uppercase tracking-widest">Seller</span>
+                      <span className="text-xs text-muted-foreground uppercase tracking-widest">Seller</span>
                       <Link to={`/profile/${item.sellerId}`} className="text-sm font-bold hover:text-amber-500 transition-colors">
                         {item.sellerName}
                       </Link>
                     </div>
-                    <button className="px-4 py-2 bg-white/10 hover:bg-white hover:text-black rounded-full text-xs font-bold tracking-widest uppercase transition-colors">
-                      Buy
+                    <button
+                      onClick={() => {
+                        const alreadyInCart = cartItems.some((c) => c.id === item.id);
+                        if (alreadyInCart) {
+                          toast.info(`"${item.title}" is already in your cart.`);
+                          return;
+                        }
+                        addItem({
+                          id: item.id,
+                          title: item.title,
+                          seller: item.sellerName,
+                          sellerId: item.sellerId,
+                          price: item.price,
+                          imageUrl: item.imageUrl,
+                          category: item.category,
+                          type: item.type,
+                        });
+                        toast.success(`"${item.title}" added to cart!`);
+                      }}
+                      className={`px-4 py-2 rounded-full text-xs font-bold tracking-widest uppercase transition-colors ${
+                        cartItems.some((c) => c.id === item.id)
+                          ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30 cursor-default'
+                          : 'bg-foreground/10 hover:bg-foreground hover:text-background'
+                      }`}
+                    >
+                      {cartItems.some((c) => c.id === item.id) ? 'In Cart ✓' : 'Buy'}
                     </button>
                   </div>
                 </div>
@@ -266,32 +306,32 @@ export default function Marketplace() {
       {isSellModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsSellModalOpen(false)} />
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-3xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="relative w-full max-w-2xl bg-card border border-border rounded-3xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto"
           >
-            <button 
+            <button
               onClick={() => setIsSellModalOpen(false)}
-              className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors"
+              className="absolute top-6 right-6 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
-            
-            <h2 className="text-3xl font-display font-bold mb-8">Sell Artwork</h2>
-            
+
+            <h2 className="text-3xl font-display font-bold mb-8 text-foreground">Sell Artwork</h2>
+
             {error && (
-              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm">
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-sm">
                 {error}
               </div>
             )}
 
             <form onSubmit={handleSellSubmit} className="space-y-6">
               <div>
-                <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2">Artwork Image</label>
-                <div className="relative h-48 border-2 border-dashed border-white/20 rounded-2xl overflow-hidden group hover:border-amber-500/50 transition-colors">
-                  <input 
-                    type="file" 
+                <label className="block text-xs font-bold tracking-widest uppercase text-muted-foreground mb-2">Artwork Image</label>
+                <div className="relative h-48 border-2 border-dashed border-border rounded-2xl overflow-hidden group hover:border-amber-500/50 transition-colors">
+                  <input
+                    type="file"
                     onChange={handleImageChange}
                     accept="image/*"
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -299,7 +339,7 @@ export default function Marketplace() {
                   {imagePreview ? (
                     <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
                       <Upload className="w-8 h-8 mb-2 group-hover:text-amber-500 transition-colors" />
                       <span className="text-sm">Click or drag to upload (Max 10MB)</span>
                     </div>
@@ -309,26 +349,26 @@ export default function Marketplace() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2">Title</label>
-                  <input 
+                  <label className="block text-xs font-bold tracking-widest uppercase text-muted-foreground mb-2">Title</label>
+                  <input
                     required
-                    type="text" 
+                    type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-amber-500 outline-none"
+                    className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:border-amber-500 outline-none placeholder:text-muted-foreground"
                     placeholder="e.g. Sunset Boulevard"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2">Price (USD)</label>
-                  <input 
+                  <label className="block text-xs font-bold tracking-widest uppercase text-muted-foreground mb-2">Price (USD)</label>
+                  <input
                     required
-                    type="number" 
+                    type="number"
                     min="0"
                     step="0.01"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-amber-500 outline-none"
+                    className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:border-amber-500 outline-none placeholder:text-muted-foreground"
                     placeholder="e.g. 150.00"
                   />
                 </div>
@@ -336,48 +376,48 @@ export default function Marketplace() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2">Category</label>
-                  <select 
+                  <label className="block text-xs font-bold tracking-widest uppercase text-muted-foreground mb-2">Category</label>
+                  <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-amber-500 outline-none appearance-none"
+                    className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:border-amber-500 outline-none appearance-none"
                   >
                     {['Painting', 'Sculpting', 'Digital', 'Photography', 'Other'].map(cat => (
-                      <option key={cat} value={cat} className="bg-zinc-900">{cat}</option>
+                      <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2">Type</label>
-                  <select 
+                  <label className="block text-xs font-bold tracking-widest uppercase text-muted-foreground mb-2">Type</label>
+                  <select
                     value={type}
                     onChange={(e) => setType(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-amber-500 outline-none appearance-none"
+                    className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:border-amber-500 outline-none appearance-none"
                   >
-                    <option value="Physical" className="bg-zinc-900">Physical Asset</option>
-                    <option value="Digital" className="bg-zinc-900">Digital Asset</option>
+                    <option value="Physical">Physical Asset</option>
+                    <option value="Digital">Digital Asset</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-2">Description</label>
-                <textarea 
+                <label className="block text-xs font-bold tracking-widest uppercase text-muted-foreground mb-2">Description</label>
+                <textarea
                   required
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-amber-500 outline-none h-32 resize-none"
+                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:border-amber-500 outline-none h-32 resize-none placeholder:text-muted-foreground"
                   placeholder="Describe your artwork..."
                 />
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={submitting}
-                className="w-full py-4 bg-amber-500 text-black font-bold rounded-xl hover:bg-white transition-colors disabled:opacity-50 flex justify-center items-center"
+                className="w-full py-4 bg-amber-500 text-black font-bold rounded-xl hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 flex justify-center items-center"
               >
                 {submitting ? (
-                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 ) : (
                   'List Item for Sale'
                 )}

@@ -1,4 +1,3 @@
-import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';
 import Community from '../components/Community';
 import Mastery from '../components/Mastery';
@@ -8,8 +7,7 @@ import CTA from '../components/CTA';
 
 export default function Landing() {
   return (
-    <div className="bg-black min-h-screen font-sans text-white selection:bg-amber-500/30">
-      <Navbar />
+    <div className="bg-background min-h-screen font-sans text-foreground selection:bg-amber-500/30">
       <main>
         <Hero />
         <Community />
@@ -18,7 +16,7 @@ export default function Landing() {
         <Marketplace />
         <CTA />
       </main>
-      <footer className="bg-black py-8 border-t border-white/10 text-center text-gray-500 text-sm">
+      <footer className="bg-background py-8 border-t border-border text-center text-muted-foreground text-sm">
         <p>&copy; {new Date().getFullYear()} JMZ Arts & Design. All rights reserved.</p>
       </footer>
     </div>

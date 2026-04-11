@@ -3,7 +3,7 @@ import { Sparkles, Palette, Box } from 'lucide-react';
 
 export default function Mastery() {
   return (
-    <section className="py-32 bg-[#050505] relative overflow-hidden">
+    <section className="py-32 bg-background relative overflow-hidden">
       {/* Noise Overlay */}
       <div className="absolute inset-0 bg-noise opacity-[0.04] z-10 pointer-events-none mix-blend-overlay" />
       
@@ -24,17 +24,17 @@ export default function Mastery() {
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel mb-8">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <span className="text-xs font-bold tracking-widest uppercase text-gray-300">Elevate Your Craft</span>
+              <span className="text-xs font-bold tracking-widest uppercase text-muted-foreground dark:text-gray-300">Elevate Your Craft</span>
             </div>
 
-            <h2 className="text-5xl md:text-7xl font-display font-bold text-white leading-[1.1] mb-8">
+            <h2 className="text-5xl md:text-7xl font-display font-bold text-foreground dark:text-white leading-[1.1] mb-8">
               Master Your <br/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-red-500">
                 Technique.
               </span>
             </h2>
             
-            <p className="text-xl text-gray-400 mb-12 max-w-xl font-light leading-relaxed">
+            <p className="text-xl text-muted-foreground dark:text-gray-400 mb-12 max-w-xl font-light leading-relaxed">
               Join exclusive masterclasses, refine your skills with industry leaders, and host your own virtual exhibitions to a global audience.
             </p>
             
@@ -43,16 +43,16 @@ export default function Mastery() {
                 <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-amber-500/20 transition-all duration-300">
                   <Palette className="w-6 h-6 text-amber-500" />
                 </div>
-                <h4 className="text-white font-display font-bold text-xl mb-2 group-hover:text-amber-400 transition-colors duration-300">Painting</h4>
-                <p className="text-sm text-gray-400 leading-relaxed">Master traditional oils, acrylics, and cutting-edge digital painting techniques.</p>
+                <h4 className="text-foreground dark:text-white font-display font-bold text-xl mb-2 group-hover:text-amber-400 transition-colors duration-300">Painting</h4>
+                <p className="text-sm text-muted-foreground dark:text-gray-400 leading-relaxed">Master traditional oils, acrylics, and cutting-edge digital painting techniques.</p>
               </motion.div>
               
               <motion.div whileHover={{ y: -5, boxShadow: "0 20px 40px -15px rgba(239,68,68,0.15)" }} className="p-8 rounded-3xl glass-panel group hover:bg-white/5 transition-all duration-300">
                 <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-red-500/20 transition-all duration-300">
                   <Box className="w-6 h-6 text-red-500" />
                 </div>
-                <h4 className="text-white font-display font-bold text-xl mb-2 group-hover:text-red-400 transition-colors duration-300">Sculpting</h4>
-                <p className="text-sm text-gray-400 leading-relaxed">Explore 3D modeling, physical sculpting, and mixed-media installations.</p>
+                <h4 className="text-foreground dark:text-white font-display font-bold text-xl mb-2 group-hover:text-red-400 transition-colors duration-300">Sculpting</h4>
+                <p className="text-sm text-muted-foreground dark:text-gray-400 leading-relaxed">Explore 3D modeling, physical sculpting, and mixed-media installations.</p>
               </motion.div>
             </div>
           </motion.div>

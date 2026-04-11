@@ -85,7 +85,7 @@ export default function Marketplace() {
   };
 
   return (
-    <section className="py-32 bg-[#050505] relative overflow-hidden">
+    <section className="py-32 bg-background relative overflow-hidden">
       {/* Noise Overlay */}
       <div className="absolute inset-0 bg-noise opacity-[0.04] z-10 pointer-events-none mix-blend-overlay" />
       
@@ -129,13 +129,13 @@ export default function Marketplace() {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="w-full lg:w-1/2 text-center lg:text-left"
           >
-            <h2 className="text-5xl md:text-7xl font-display font-bold text-white leading-[1.1] mb-8">
+            <h2 className="text-5xl md:text-7xl font-display font-bold text-foreground dark:text-white leading-[1.1] mb-8">
               Collect <br/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-red-500">
                 Masterpieces.
               </span>
             </h2>
-            <p className="text-xl text-gray-400 mb-12 max-w-xl mx-auto lg:mx-0 font-light leading-relaxed">
+            <p className="text-xl text-muted-foreground dark:text-gray-400 mb-12 max-w-xl mx-auto lg:mx-0 font-light leading-relaxed">
               Discover exclusive pieces, invest in emerging talent, and build your digital and physical collection in our curated marketplace.
             </p>
             
@@ -151,25 +151,25 @@ export default function Marketplace() {
               
               <button 
                 onClick={handleSell}
-                className="group flex items-center gap-2 text-sm text-gray-400 font-bold tracking-widest uppercase hover:text-white transition-colors"
+                className="group flex items-center gap-2 text-sm text-muted-foreground dark:text-gray-400 font-bold tracking-widest uppercase hover:text-foreground dark:hover:text-white transition-colors"
               >
                 Sell Your Art
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
             
-            <div className="mt-16 grid grid-cols-3 gap-8 border-t border-white/10 pt-12">
+            <div className="mt-16 grid grid-cols-3 gap-8 border-t border-border dark:border-white/10 pt-12">
               <div>
-                <p className="text-3xl font-display font-bold text-white mb-2">10k+</p>
-                <p className="text-xs text-gray-500 uppercase tracking-widest">Artworks</p>
+                <p className="text-3xl font-display font-bold text-foreground dark:text-white mb-2">10k+</p>
+                <p className="text-xs text-muted-foreground dark:text-gray-500 uppercase tracking-widest">Artworks</p>
               </div>
               <div>
-                <p className="text-3xl font-display font-bold text-white mb-2">5k+</p>
-                <p className="text-xs text-gray-500 uppercase tracking-widest">Artists</p>
+                <p className="text-3xl font-display font-bold text-foreground dark:text-white mb-2">5k+</p>
+                <p className="text-xs text-muted-foreground dark:text-gray-500 uppercase tracking-widest">Artists</p>
               </div>
               <div>
-                <p className="text-3xl font-display font-bold text-white mb-2">$2M+</p>
-                <p className="text-xs text-gray-500 uppercase tracking-widest">Volume</p>
+                <p className="text-3xl font-display font-bold text-foreground dark:text-white mb-2">$2M+</p>
+                <p className="text-xs text-muted-foreground dark:text-gray-500 uppercase tracking-widest">Volume</p>
               </div>
             </div>
           </motion.div>
