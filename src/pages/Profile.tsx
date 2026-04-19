@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, getDocs, doc, onSnapshot, orderBy, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
 import { useFollow } from '../hooks/useFollow';
 import { useLike } from '../hooks/useLike';
+import { useCommissions, useUpdateCommissionStatus, type Commission } from '../hooks/useCommissions';
 
 import UploadModal from '../components/UploadModal';
 import EditProfileModal from '../components/EditProfileModal';
-import { Plus, Lock, Globe, MapPin, Link as LinkIcon, Trash2, Edit2, Heart, UserPlus, UserCheck } from 'lucide-react';
+import CommissionRequestModal from '../components/CommissionRequestModal';
+import CreatorAnalytics from '../components/profile/CreatorAnalytics';
+import FollowListModal from '../components/profile/FollowListModal';
+import { Plus, Lock, Globe, MapPin, Link as LinkIcon, Trash2, Edit2, Heart, UserPlus, UserCheck, Palette, Clock, CheckCircle, XCircle, ChevronDown, BarChart2, MessageSquareText } from 'lucide-react';
 
 export default function Profile() {
   const { userId } = useParams();
@@ -20,6 +24,9 @@ export default function Profile() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
   const [artworkToDelete, setArtworkToDelete] = useState<string | null>(null);
+  const [isCommissionModalOpen, setIsCommissionModalOpen] = useState(false);
+  const [followModalType, setFollowModalType] = useState<'followers' | 'following' | null>(null);
+  const [activeTab, setActiveTab] = useState<'works' | 'commissions' | 'analytics'>('works');
   const [isDeleting, setIsDeleting] = useState(false);
 
   const isOwner = currentUser?.uid === userId;
@@ -126,7 +133,7 @@ export default function Profile() {
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-muted-foreground mb-3">
                     <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> Global</span>
                     <span className="flex items-center gap-1"><LinkIcon className="w-4 h-4" /> portfolio.com</span>
-                    <ProfileFollowCounts userId={userId!} />
+                    <ProfileFollowCounts userId={userId!} onOpenList={(type) => setFollowModalType(type)} />
                   </div>
                   <p className="text-muted-foreground max-w-2xl text-lg font-light leading-relaxed">
                     {profileUser.bio || "Digital artist exploring the intersection of technology and human emotion. Based everywhere."}
@@ -153,78 +160,155 @@ export default function Profile() {
                       </button>
                     </>
                   ) : (
-                    <ProfileFollowButton userId={userId!} />
+                    <>
+                      <ProfileFollowButton userId={userId!} />
+                      {currentUser && (
+                        <>
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => setIsCommissionModalOpen(true)}
+                            className="px-6 py-3 rounded-full text-sm font-bold tracking-widest uppercase border border-amber-500/30 text-amber-500 hover:bg-amber-500 hover:text-white transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Palette className="w-4 h-4" /> Request Commission
+                          </motion.button>
+                          <MessageArtistButton artistId={userId!} />
+                        </>
+                      )}
+                    </>
                   )}
                 </div>
               </motion.div>
 
-              {/* Portfolio Grid */}
-              <div className="mb-12 flex items-center justify-between border-b border-border pb-6">
-                <h2 className="text-2xl font-display font-bold text-foreground">Selected Works <span className="text-muted-foreground text-lg font-sans font-normal ml-2">({artworks.length})</span></h2>
-              </div>
-
-              {artworks.length === 0 ? (
-                <div className="text-center py-32 glass-panel rounded-3xl">
-                  <p className="text-muted-foreground text-lg font-light">No artworks found in this collection.</p>
+              {/* Tabs — only owners see the Commissions tab */}
+              {isOwner ? (
+                <div className="mb-12 flex items-center gap-0 border-b border-border">
+                  <button
+                    onClick={() => setActiveTab('works')}
+                    className={`px-6 py-4 text-sm font-bold tracking-widest uppercase transition-colors relative ${
+                      activeTab === 'works'
+                        ? 'text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Selected Works
+                    <span className="text-muted-foreground text-xs font-sans font-normal ml-1.5">({artworks.length})</span>
+                    {activeTab === 'works' && (
+                      <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('commissions')}
+                    className={`px-6 py-4 text-sm font-bold tracking-widest uppercase transition-colors relative ${
+                      activeTab === 'commissions'
+                        ? 'text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Palette className="w-4 h-4 inline -mt-0.5 mr-1.5" />
+                    Commissions
+                    {activeTab === 'commissions' && (
+                      <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('analytics')}
+                    className={`px-6 py-4 text-sm font-bold tracking-widest uppercase transition-colors relative ${
+                      activeTab === 'analytics'
+                        ? 'text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <BarChart2 className="w-4 h-4 inline -mt-0.5 mr-1.5" />
+                    Analytics
+                    {activeTab === 'analytics' && (
+                      <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
+                    )}
+                  </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[400px]">
-                  {artworks.map((art, index) => (
-                    <Link
-                      key={art.id}
-                      to={`/artwork/${art.id}`}
-                      className={`group relative rounded-3xl overflow-hidden bg-card border border-border block ${index % 4 === 0 ? 'md:col-span-2 md:row-span-2' : ''}`}
-                    >
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                        className="w-full h-full"
-                      >
-                        <img 
-                          src={art.imageUrl} 
-                          alt={art.title} 
-                          className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                          referrerPolicy="no-referrer"
-                        />
-                        
-                        {isOwner && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setArtworkToDelete(art.id);
-                            }}
-                            className="absolute top-4 right-4 p-3 bg-red-500/90 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 shadow-lg hover:scale-110"
-                            title="Delete Artwork"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8 pointer-events-none">
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs font-bold tracking-widest uppercase text-amber-500 bg-amber-500/10 px-3 py-1.5 rounded-full backdrop-blur-md">
-                              {art.category}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              {isOwner && (
-                                <span className="text-gray-400 bg-black/50 p-2 rounded-full backdrop-blur-md">
-                                  {art.privacy === 'private' ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
-                                </span>
-                              )}
-                              <ProfileLikeButton artworkId={art.id} />
-                            </div>
-                          </div>
-                          <h3 className="text-3xl font-display font-bold text-white mb-2">{art.title}</h3>
-                          {art.description && (
-                            <p className="text-sm text-gray-300 line-clamp-2 font-light">{art.description}</p>
-                          )}
-                        </div>
-                      </motion.div>
-                    </Link>
-                  ))}
+                <div className="mb-12 flex items-center justify-between border-b border-border pb-6">
+                  <h2 className="text-2xl font-display font-bold text-foreground">Selected Works <span className="text-muted-foreground text-lg font-sans font-normal ml-2">({artworks.length})</span></h2>
                 </div>
+              )}
+
+              {/* Tab Content */}
+              {(activeTab === 'works' || !isOwner) && (
+                <>
+                  {artworks.length === 0 ? (
+                    <div className="text-center py-32 glass-panel rounded-3xl">
+                      <p className="text-muted-foreground text-lg font-light">No artworks found in this collection.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[400px]">
+                      {artworks.map((art, index) => (
+                        <Link
+                          key={art.id}
+                          to={`/artwork/${art.id}`}
+                          className={`group relative rounded-3xl overflow-hidden bg-card border border-border block ${index % 4 === 0 ? 'md:col-span-2 md:row-span-2' : ''}`}
+                        >
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                            className="w-full h-full"
+                          >
+                            <img 
+                              src={art.imageUrl} 
+                              alt={art.title} 
+                              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                              referrerPolicy="no-referrer"
+                            />
+                            
+                            {isOwner && (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setArtworkToDelete(art.id);
+                                }}
+                                className="absolute top-4 right-4 p-3 bg-red-500/90 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 shadow-lg hover:scale-110"
+                                title="Delete Artwork"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8 pointer-events-none">
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="text-xs font-bold tracking-widest uppercase text-amber-500 bg-amber-500/10 px-3 py-1.5 rounded-full backdrop-blur-md">
+                                  {art.category}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  {isOwner && (
+                                    <span className="text-gray-400 bg-black/50 p-2 rounded-full backdrop-blur-md">
+                                      {art.privacy === 'private' ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
+                                    </span>
+                                  )}
+                                  <ProfileLikeButton artworkId={art.id} authorId={art.authorId} />
+                                </div>
+                              </div>
+                              <h3 className="text-3xl font-display font-bold text-white mb-2">{art.title}</h3>
+                              {art.description && (
+                                <p className="text-sm text-gray-300 line-clamp-2 font-light">{art.description}</p>
+                              )}
+                            </div>
+                          </motion.div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Analytics Dashboard — owner only */}
+              {activeTab === 'analytics' && isOwner && (
+                <CreatorAnalytics userId={userId!} />
+              )}
+
+              {/* Commissions Dashboard — owner only */}
+              {activeTab === 'commissions' && isOwner && (
+                <CommissionsDashboard userId={userId!} />
               )}
             </div>
           </>
@@ -245,6 +329,13 @@ export default function Profile() {
         isOpen={isEditProfileModalOpen}
         onClose={() => setIsEditProfileModalOpen(false)}
         userProfile={profileUser}
+      />
+
+      <CommissionRequestModal
+        isOpen={isCommissionModalOpen}
+        onClose={() => setIsCommissionModalOpen(false)}
+        artistId={userId!}
+        artistName={profileUser?.displayName || 'Artist'}
       />
 
       {/* Delete Confirmation Modal */}
@@ -283,21 +374,36 @@ export default function Profile() {
           </motion.div>
         </div>
       )}
+
+      <AnimatePresence>
+        {followModalType && (
+          <FollowListModal 
+            isOpen={followModalType !== null}
+            onClose={() => setFollowModalType(null)}
+            userId={userId!}
+            type={followModalType}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────
 
-function ProfileFollowCounts({ userId }: { userId: string }) {
+function ProfileFollowCounts({ userId, onOpenList }: { userId: string, onOpenList: (type: 'followers' | 'following') => void }) {
   const { followerCount, followingCount } = useFollow(userId);
   return (
     <>
-      <span className="font-bold text-foreground">{followerCount}</span>
-      <span>followers</span>
+      <button onClick={() => onOpenList('followers')} className="flex items-center gap-1 hover:text-amber-500 transition-colors">
+        <span className="font-bold text-foreground">{followerCount}</span>
+        <span>followers</span>
+      </button>
       <span className="text-muted-foreground/40">·</span>
-      <span className="font-bold text-foreground">{followingCount}</span>
-      <span>following</span>
+      <button onClick={() => onOpenList('following')} className="flex items-center gap-1 hover:text-amber-500 transition-colors">
+        <span className="font-bold text-foreground">{followingCount}</span>
+        <span>following</span>
+      </button>
     </>
   );
 }
@@ -326,8 +432,8 @@ function ProfileFollowButton({ userId }: { userId: string }) {
   );
 }
 
-function ProfileLikeButton({ artworkId }: { artworkId: string }) {
-  const { hasLiked, likeCount, toggling, toggle } = useLike(artworkId);
+function ProfileLikeButton({ artworkId, authorId }: { artworkId: string; authorId?: string }) {
+  const { hasLiked, likeCount, toggling, toggle } = useLike(artworkId, authorId);
   return (
     <button
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggle(); }}
@@ -338,6 +444,317 @@ function ProfileLikeButton({ artworkId }: { artworkId: string }) {
     >
       <Heart className={`w-3.5 h-3.5 ${hasLiked ? 'fill-current' : ''}`} />
       {likeCount}
+    </button>
+  );
+}
+
+// ── Commissions Dashboard ─────────────────────────────────────────────────
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  pending:     { label: 'Pending',     color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', icon: <Clock className="w-3.5 h-3.5" /> },
+  accepted:    { label: 'Accepted',    color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: <CheckCircle className="w-3.5 h-3.5" /> },
+  declined:    { label: 'Declined',    color: 'text-red-400 bg-red-500/10 border-red-500/20', icon: <XCircle className="w-3.5 h-3.5" /> },
+  in_progress: { label: 'In Progress', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20', icon: <Palette className="w-3.5 h-3.5" /> },
+  delivered:   { label: 'Delivered',   color: 'text-purple-400 bg-purple-500/10 border-purple-500/20', icon: <CheckCircle className="w-3.5 h-3.5" /> },
+  completed:   { label: 'Completed',   color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: <CheckCircle className="w-3.5 h-3.5" /> },
+  cancelled:   { label: 'Cancelled',   color: 'text-gray-400 bg-gray-500/10 border-gray-500/20', icon: <XCircle className="w-3.5 h-3.5" /> },
+};
+
+function CommissionsDashboard({ userId }: { userId: string }) {
+  const { commissions, loading } = useCommissions(userId, 'artist');
+  const { updateStatus, updating } = useUpdateCommissionStatus();
+  const [filter, setFilter] = useState<string>('all');
+
+  const filtered = filter === 'all'
+    ? commissions
+    : commissions.filter((c) => c.status === filter);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-24">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Filter bar */}
+      <div className="flex flex-wrap gap-2 mb-8">
+        {['all', 'pending', 'accepted', 'in_progress', 'delivered', 'completed', 'declined', 'cancelled'].map((s) => (
+          <button
+            key={s}
+            onClick={() => setFilter(s)}
+            className={`px-4 py-2 rounded-full text-xs font-bold tracking-widest uppercase border transition-colors ${
+              filter === s
+                ? 'bg-foreground text-background border-foreground'
+                : 'bg-transparent text-muted-foreground border-border hover:border-foreground/30'
+            }`}
+          >
+            {s === 'all' ? 'All' : STATUS_CONFIG[s]?.label || s}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="text-center py-24 glass-panel rounded-3xl">
+          <Palette className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
+          <p className="text-muted-foreground text-lg font-light">
+            {commissions.length === 0
+              ? 'No commission requests yet. They\'ll appear here when a buyer inquires.'
+              : 'No commissions match this filter.'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <AnimatePresence>
+            {filtered.map((c) => (
+              <CommissionCard key={c.id} commission={c} updateStatus={updateStatus} updating={updating} />
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CommissionCard({
+  commission: c,
+  updateStatus,
+  updating,
+}: {
+  commission: Commission;
+  updateStatus: (id: string, status: Commission['status']) => Promise<void>;
+  updating: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const cfg = STATUS_CONFIG[c.status] || STATUS_CONFIG.pending;
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="glass-panel rounded-2xl overflow-hidden border border-border"
+    >
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between gap-4 p-6 text-left hover:bg-white/[0.02] transition-colors"
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 mb-1">
+            <h4 className="text-lg font-display font-bold text-foreground truncate">{c.title}</h4>
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border ${cfg.color}`}>
+              {cfg.icon} {cfg.label}
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground font-light">
+            From <span className="font-medium text-foreground">{c.buyerName}</span>
+            {' · '}
+            <span className="text-amber-500 font-bold">${c.budget.toLocaleString()}</span>
+            {c.deadline && (
+              <> · Due {c.deadline.toDate().toLocaleDateString()}</>
+            )}
+          </p>
+        </div>
+        <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-300 flex-shrink-0 ${expanded ? 'rotate-180' : ''}`} />
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="px-6 pb-6 pt-2 border-t border-border/50">
+              <p className="text-sm text-muted-foreground font-light whitespace-pre-wrap mb-6 leading-relaxed">
+                {c.description}
+              </p>
+
+              {/* Action buttons — only show relevant transitions */}
+              <div className="flex flex-wrap gap-3">
+                {c.status === 'pending' && (
+                  <>
+                    <button
+                      disabled={updating}
+                      onClick={() => updateStatus(c.id, 'accepted', { recipientId: c.buyerId, commissionTitle: c.title })}
+                      className="px-5 py-2.5 rounded-xl text-xs font-bold tracking-widest uppercase bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      disabled={updating}
+                      onClick={() => updateStatus(c.id, 'declined', { recipientId: c.buyerId, commissionTitle: c.title })}
+                      className="px-5 py-2.5 rounded-xl text-xs font-bold tracking-widest uppercase bg-transparent border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                    >
+                      Decline
+                    </button>
+                  </>
+                )}
+                {c.status === 'accepted' && (
+                  <button
+                    disabled={updating}
+                    onClick={() => updateStatus(c.id, 'in_progress', { recipientId: c.buyerId, commissionTitle: c.title })}
+                    className="px-5 py-2.5 rounded-xl text-xs font-bold tracking-widest uppercase bg-blue-500 text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
+                  >
+                    Start Work
+                  </button>
+                )}
+                {c.status === 'in_progress' && (
+                  <button
+                    disabled={updating}
+                    onClick={() => updateStatus(c.id, 'delivered', { recipientId: c.buyerId, commissionTitle: c.title })}
+                    className="px-5 py-2.5 rounded-xl text-xs font-bold tracking-widest uppercase bg-purple-500 text-white hover:bg-purple-600 transition-colors disabled:opacity-50"
+                  >
+                    Mark Delivered
+                  </button>
+                )}
+                {c.status === 'delivered' && (
+                  <button
+                    disabled={updating}
+                    onClick={() => updateStatus(c.id, 'completed', { recipientId: c.buyerId, commissionTitle: c.title })}
+                    className="px-5 py-2.5 rounded-xl text-xs font-bold tracking-widest uppercase bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
+                  >
+                    Mark Complete
+                  </button>
+                )}
+
+                {/* Message Client — available on active commissions */}
+                {['pending', 'accepted', 'in_progress', 'delivered'].includes(c.status) && (
+                  <MessageClientButton buyerId={c.buyerId} commissionId={c.id} />
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ── Messaging Sub-Components ──────────────────────────────────────────────
+
+function MessageArtistButton({ artistId }: { artistId: string }) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
+  const handleClick = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      // Inline chat creation logic to avoid hook-in-event-handler issues
+      const { collection, query, where, getDocs, doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+      const { db } = await import('../firebase');
+
+      // Check for existing chat
+      const q = query(collection(db, 'chats'), where('participants', 'array-contains', user.uid));
+      const snapshot = await getDocs(q);
+      let chatId: string | null = null;
+
+      snapshot.forEach(d => {
+        const data = d.data();
+        if (data.participants.includes(artistId)) {
+          chatId = d.id;
+        }
+      });
+
+      if (!chatId) {
+        const newRef = doc(collection(db, 'chats'));
+        await setDoc(newRef, {
+          participants: [user.uid, artistId],
+          lastMessage: '',
+          lastMessageTime: serverTimestamp(),
+          unreadCount: { [user.uid]: 0, [artistId]: 0 }
+        });
+        chatId = newRef.id;
+      }
+
+      navigate(`/messages?chat=${chatId}`);
+    } catch (err) {
+      console.error('Failed to init chat:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) return null;
+
+  return (
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={handleClick}
+      disabled={loading}
+      className="px-6 py-3 rounded-full text-sm font-bold tracking-widest uppercase border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+    >
+      {loading ? (
+        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+      ) : (
+        <><MessageSquareText className="w-4 h-4" /> Message</>
+      )}
+    </motion.button>
+  );
+}
+
+function MessageClientButton({ buyerId, commissionId }: { buyerId: string; commissionId: string }) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
+  const handleClick = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { collection, query, where, getDocs, doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+      const { db } = await import('../firebase');
+
+      const q = query(collection(db, 'chats'), where('participants', 'array-contains', user.uid));
+      const snapshot = await getDocs(q);
+      let chatId: string | null = null;
+
+      snapshot.forEach(d => {
+        const data = d.data();
+        if (data.participants.includes(buyerId)) {
+          chatId = d.id;
+        }
+      });
+
+      if (!chatId) {
+        const newRef = doc(collection(db, 'chats'));
+        await setDoc(newRef, {
+          participants: [user.uid, buyerId],
+          commissionId,
+          lastMessage: '',
+          lastMessageTime: serverTimestamp(),
+          unreadCount: { [user.uid]: 0, [buyerId]: 0 }
+        });
+        chatId = newRef.id;
+      }
+
+      navigate(`/messages?chat=${chatId}`);
+    } catch (err) {
+      console.error('Failed to init chat:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className="px-5 py-2.5 rounded-xl text-xs font-bold tracking-widest uppercase border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-50 flex items-center gap-2"
+    >
+      {loading ? (
+        <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+      ) : (
+        <><MessageSquareText className="w-3.5 h-3.5" /> Message Client</>
+      )}
     </button>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { doc, getDoc, collection, query, where, orderBy, getDocs, increment, updateDoc } from 'firebase/firestore';
@@ -23,6 +23,30 @@ import {
   Calendar,
   Tag,
 } from 'lucide-react';
+import { Canvas } from '@react-three/fiber';
+import { useGLTF, useTexture, OrbitControls, Environment, ContactShadows } from '@react-three/drei';
+import * as THREE from 'three';
+
+function ModelViewer({ url }: { url: string }) {
+  const { scene } = useGLTF(url);
+  return <primitive object={scene} scale={2} position={[0, -1, 0]} />;
+}
+
+function PostcardViewer({ imageUrl }: { imageUrl: string }) {
+  const texture = useTexture(imageUrl);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  // Compute aspect ratio dynamically based on the texture dimensions
+  const aspect = texture.image ? texture.image.width / texture.image.height : 1;
+  const width = aspect > 1 ? 5 : 5 * aspect;
+  const height = aspect > 1 ? 5 / aspect : 5;
+
+  return (
+    <mesh position={[0, 0, 0]} castShadow receiveShadow>
+      <boxGeometry args={[width, height, 0.1]} />
+      <meshStandardMaterial map={texture} roughness={0.2} metalness={0.1} />
+    </mesh>
+  );
+}
 
 export default function ArtworkDetail() {
   const { artworkId } = useParams<{ artworkId: string }>();
@@ -42,7 +66,7 @@ export default function ArtworkDetail() {
   //   returning users in a new session are counted correctly)
   const hasCountedView = useRef(false);
 
-  const { hasLiked, likeCount, toggling: likeToggling, toggle: toggleLike } = useLike(artworkId!);
+  const { hasLiked, likeCount, toggling: likeToggling, toggle: toggleLike } = useLike(artworkId!, artwork?.authorId);
   const { isFollowing, followerCount, toggling: followToggling, toggle: toggleFollow } = useFollow(artwork?.authorId || '');
   const { comments, loading: commentsLoading, submitting, addComment } = useComments(artworkId!);
   const addItem = useCartStore((s) => s.addItem);
@@ -190,13 +214,28 @@ export default function ArtworkDetail() {
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col gap-6"
           >
-            {/* Main image */}
-            <div className="relative rounded-3xl overflow-hidden bg-card border border-border shadow-2xl">
-              <img
-                src={artwork.imageUrl}
-                alt={artwork.title}
-                className="w-full object-contain max-h-[75vh]"
-              />
+            {/* Main image / 3D Viewer */}
+            <div className="relative rounded-3xl overflow-hidden bg-card border border-border shadow-2xl h-[60vh] md:h-[75vh]">
+              {artwork.glbUrl || artwork.imageUrl ? (
+                <Canvas camera={{ position: [0, 0, 8], fov: 50 }} shadows className="w-full h-full cursor-grab active:cursor-grabbing">
+                  <Suspense fallback={null}>
+                    <Environment preset="studio" />
+                    <ambientLight intensity={0.5} />
+                    <directionalLight position={[10, 10, 5]} intensity={1} castShadow shadow-bias={-0.0001} />
+                    
+                    {artwork.glbUrl ? (
+                      <ModelViewer url={artwork.glbUrl} />
+                    ) : (
+                      <PostcardViewer imageUrl={artwork.imageUrl} />
+                    )}
+                    
+                    <ContactShadows position={[0, -3, 0]} opacity={0.5} scale={15} blur={2} far={4} />
+                    <OrbitControls makeDefault autoRotate autoRotateSpeed={0.5} enablePan={false} />
+                  </Suspense>
+                </Canvas>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">No imagery available</div>
+              )}
               {/* Floating action bar */}
               <div className="absolute bottom-4 right-4 flex items-center gap-2">
                 <motion.button

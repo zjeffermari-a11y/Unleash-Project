@@ -1,8 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
+import unleashLogo from '@/src/unleash-logo.svg';
 import { useAuth } from '@/src/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '../ThemeToggle';
-import { Compass, LogOut, Package, ChevronDown } from 'lucide-react';
+import { Compass, LogOut, Package, ChevronDown, Menu, MessageSquareText } from 'lucide-react';
 import * as React from 'react';
 import { GlobalSearch } from '../GlobalSearch';
 import { CreateHubModal } from '../action-center/CreateHubModal';
@@ -10,6 +11,7 @@ import { CartSheet } from '../action-center/CartSheet';
 import { NotificationsPopover } from '../action-center/NotificationsPopover';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useChats } from '@/src/hooks/useChats';
 
 type Section = 'gallery' | 'community' | 'profile' | null;
 
@@ -27,23 +29,54 @@ export function Header({ activeSection }: HeaderProps) {
   const { user, login, logout } = useAuth();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = React.useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-xl transition-all">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
 
-        {/* ── LEFT: Logo + Section Switcher ── */}
-        <div className="flex items-center gap-4">
+        {/* ── LEFT: Mobile Menu + Logo + Section Switcher ── */}
+        <div className="flex items-center gap-2 sm:gap-4">
+
+          {/* Mobile Hamburger Menu (Hidden on Desktop) */}
+          <div className="md:hidden flex items-center">
+            <Popover open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <PopoverTrigger className="p-2 rounded-lg hover:bg-accent transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <Menu className="h-5 w-5 text-foreground" />
+              </PopoverTrigger>
+              <PopoverContent align="start" sideOffset={12} className="w-48 p-2 rounded-2xl border border-border bg-popover/95 backdrop-blur-xl shadow-2xl">
+                <div className="flex flex-col gap-1">
+                  {SECTIONS.map((section) => {
+                    const isActive = activeSection === section.value;
+                    return (
+                      <Link
+                        key={section.value}
+                        to={section.route}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={cn(
+                          'px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
+                          isActive
+                            ? 'bg-background text-foreground shadow-sm border border-border'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                        )}
+                      >
+                        {section.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
           <Link to="/" className="flex items-center gap-2 group shrink-0">
-            <div className="bg-amber-500/10 p-1.5 rounded-lg border border-amber-500/20 group-hover:bg-amber-500/30 transition-colors">
-              <Compass className="h-5 w-5 text-amber-500" />
-            </div>
+            <img src={unleashLogo} alt="Unleash Logo" className="h-10 w-auto group-hover:opacity-80 transition-opacity" />
             <span className="font-display font-bold text-xl tracking-tight hidden sm:inline-block">
               Unleash<span className="text-amber-500">.</span>
             </span>
           </Link>
 
-          {/* Section switcher — pill style, contextual secondary nav lives in Sidebar */}
+          {/* Desktop Section switcher (Hidden on Mobile) */}
           <nav className="hidden md:flex items-center gap-1 bg-accent/40 border border-border p-1 rounded-xl">
             {SECTIONS.map((section) => {
               const isActive = activeSection === section.value;
@@ -76,6 +109,7 @@ export function Header({ activeSection }: HeaderProps) {
             <>
               <CreateHubModal />
               <CartSheet />
+              <InboxButton />
               <NotificationsPopover />
               <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
             </>
@@ -84,10 +118,6 @@ export function Header({ activeSection }: HeaderProps) {
           <ThemeToggle />
 
           {user ? (
-            /*
-             * Profile menu — Popover-based to avoid the base-ui MenuGroupRootContext crash.
-             * DropdownMenuLabel → MenuGroupLabel requires Menu.Group parent context.
-             */
             <Popover open={profileOpen} onOpenChange={setProfileOpen}>
               <PopoverTrigger className="flex items-center h-9 rounded-full pl-2 pr-3 border border-border/50 bg-background/50 hover:bg-accent/50 gap-2 outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors">
                 <img
@@ -161,5 +191,31 @@ export function Header({ activeSection }: HeaderProps) {
 
       </div>
     </header>
+  );
+}
+
+// ── Inbox / Messages icon with unread badge ────────────────────────────────
+function InboxButton() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { chats } = useChats();
+
+  const totalUnread = chats.reduce((sum, c) => {
+    return sum + (c.unreadCount?.[user?.uid || ''] || 0);
+  }, 0);
+
+  return (
+    <button
+      onClick={() => navigate('/messages')}
+      className="relative p-2 rounded-xl hover:bg-accent transition-colors text-muted-foreground hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      title="Client Portal"
+    >
+      <MessageSquareText className="h-5 w-5" />
+      {totalUnread > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 bg-amber-500 text-black text-[9px] font-bold min-w-[16px] h-4 flex items-center justify-center rounded-full px-1 shadow-lg">
+          {totalUnread > 9 ? '9+' : totalUnread}
+        </span>
+      )}
+    </button>
   );
 }

@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
+import { sendNotification } from './useNotifications';
 
 /**
  * useFollow — manages follow/unfollow between the current user and a target artist.
@@ -88,6 +89,16 @@ export function useFollow(targetUserId: string) {
           followerId: user.uid,
           followingId: targetUserId,
           createdAt: serverTimestamp(),
+        });
+        // Notify the artist that someone followed them
+        sendNotification({
+          recipientId: targetUserId,
+          actorId: user.uid,
+          actorName: user.displayName || 'Someone',
+          actorPhoto: user.photoURL || '',
+          type: 'follow',
+          title: 'New Follower',
+          message: `${user.displayName || 'Someone'} started following you.`,
         });
       }
     } finally {

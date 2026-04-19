@@ -10,6 +10,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
+import { sendNotification } from './useNotifications';
 
 /**
  * useLike — manages like/unlike for a single artwork.
@@ -22,7 +23,7 @@ import { useAuth } from '../AuthContext';
  * This avoids RunAggregationQuery (getCountFromServer) which requires special
  * Firestore security rule permissions.
  */
-export function useLike(artworkId: string) {
+export function useLike(artworkId: string, authorId?: string) {
   const { user } = useAuth();
   const [hasLiked, setHasLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -64,6 +65,19 @@ export function useLike(artworkId: string) {
         await deleteDoc(userLikeRef);
       } else {
         await setDoc(userLikeRef, { likedAt: serverTimestamp() });
+        // Notify the artwork author that someone liked their work
+        if (authorId) {
+          sendNotification({
+            recipientId: authorId,
+            actorId: user.uid,
+            actorName: user.displayName || 'Someone',
+            actorPhoto: user.photoURL || '',
+            type: 'like',
+            title: 'New Like',
+            message: `${user.displayName || 'Someone'} liked your artwork.`,
+            targetId: artworkId,
+          });
+        }
       }
     } catch {
       // Rollback optimistic update on error
@@ -72,7 +86,7 @@ export function useLike(artworkId: string) {
     } finally {
       setToggling(false);
     }
-  }, [user, userLikeRef, hasLiked, toggling]);
+  }, [user, userLikeRef, hasLiked, toggling, authorId, artworkId]);
 
   return { hasLiked, likeCount, toggling, toggle };
 }

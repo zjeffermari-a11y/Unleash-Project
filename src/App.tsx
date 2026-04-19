@@ -13,8 +13,10 @@ import Workshops from './pages/Workshops';
 import ShowcaseCreate from './pages/create/ShowcaseCreate';
 import ProductCreate from './pages/create/ProductCreate';
 import ArtworkDetail from './pages/ArtworkDetail';
+import Messages from './pages/Messages';
 import { useThemeStore } from './store/useThemeStore';
 import { Shell } from './components/layout/Shell';
+import { FloatingCharacter } from './components/ui/FloatingCharacter';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,9 +54,13 @@ export default function App() {
             {/* Fallback for /create if people try it directly */}
             <Route path="/create" element={<Shell><Landing /></Shell>} />
 
+            {/* Client Portal */}
+            <Route path="/messages" element={<Shell showSidebar={false}><Messages /></Shell>} />
+
             {/* Artwork Detail */}
             <Route path="/artwork/:artworkId" element={<Shell showSidebar={false}><ArtworkDetail /></Shell>} />
           </Routes>
+          <FloatingCharacter />
         </Router>
         {/* Toast notification provider — must be inside AuthProvider but outside Router */}
         <Toaster

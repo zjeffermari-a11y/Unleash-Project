@@ -178,7 +178,7 @@ export default function Gallery() {
 // FIX 2: Overlay is now a solid dark veil (opacity-60 always + opacity-100
 //         on hover) so the entire card is covered — not just the bottom.
 function GalleryCard({ art }: { art: any }) {
-  const { hasLiked, likeCount, toggling, toggle } = useLike(art.id);
+  const { hasLiked, likeCount, toggling, toggle } = useLike(art.id, art.authorId);
   const navigate = useNavigate();
 
   return (

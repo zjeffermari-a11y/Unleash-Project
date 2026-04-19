@@ -74,10 +74,19 @@ service cloud.firestore {
       return url is string && url.size() > 0 && url.size() <= 1048487;
     }
 
+    // Validates that a URL points to our Cloudinary account
+    function isValidCloudinaryUrl(url) {
+      return url is string &&
+             url.size() > 0 &&
+             url.matches('https://res\\.cloudinary\\.com/.*');
+    }
+
+    // SECURITY: Admin check uses Firebase Custom Claims (set via Admin SDK)
+    // To grant admin: admin.auth().setCustomUserClaims(uid, { admin: true })
     function isAdmin() {
       return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-          (request.auth.token.email == "zjeffermari@gmail.com" && request.auth.token.email_verified == true));
+        (request.auth.token.admin == true ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
 
     // ===============================================================
@@ -208,7 +217,12 @@ service cloud.firestore {
       // Only the comment author can delete their own comment.
       match /comments/{commentId} {
         allow read: if true;
-        allow create: if isAuthenticated();
+        allow create: if isAuthenticated() &&
+                        request.resource.data.authorId == request.auth.uid &&
+                        request.resource.data.body is string &&
+                        request.resource.data.body.size() >= 1 &&
+                        request.resource.data.body.size() <= 2000 &&
+                        request.resource.data.createdAt is timestamp;
         allow delete: if isAuthenticated() && request.auth.uid == resource.data.authorId;
       }
     }
@@ -279,6 +293,124 @@ service cloud.firestore {
       allow delete: if isAuthenticated() &&
                       resource.data.followerId == request.auth.uid;
       allow update: if false;
+    }
+
+    // ── Commissions collection ────────────────────────────────────────────────
+    // V1 "Gallery Inquiry" model — no real payment processing.
+    // Security model:
+    //   READ   — buyer or artist can read their own commissions
+    //   CREATE — buyers create commissions; buyerId must match auth uid
+    //   UPDATE — artists can update status on commissions addressed to them
+    //   DELETE — not allowed; commissions are a record of inquiry
+    match /commissions/{commissionId} {
+      // Both parties can read
+      allow read: if isAuthenticated() &&
+                    (request.auth.uid == resource.data.buyerId ||
+                     request.auth.uid == resource.data.artistId);
+
+      // Buyer creates — must match their own uid, status must start as 'pending'
+      allow create: if isAuthenticated() &&
+                      request.resource.data.buyerId == request.auth.uid &&
+                      request.resource.data.status == 'pending' &&
+                      request.resource.data.budget is number &&
+                      request.resource.data.budget > 0;
+
+      // Artist can accept/decline; buyer can cancel their own pending request
+      allow update: if isAuthenticated() &&
+                      (request.auth.uid == resource.data.artistId ||
+                       (request.auth.uid == resource.data.buyerId &&
+                        resource.data.status == 'pending' &&
+                        request.resource.data.status == 'cancelled')) &&
+                      request.resource.data.buyerId == resource.data.buyerId &&
+                      request.resource.data.artistId == resource.data.artistId &&
+                      request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if false;
+    }
+
+    // ── Notifications collection ──────────────────────────────────────────────
+    // Real-time notification inbox for each user.
+    // Security model:
+    //   READ   — users can only read their own notifications
+    //   CREATE — any authenticated user can create (actorId must == auth.uid)
+    //   UPDATE — only the recipient, and only to flip read → true
+    //   DELETE — only the recipient can clear their own notifications
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() &&
+                    request.auth.uid == resource.data.recipientId;
+
+      allow create: if isAuthenticated() &&
+                      request.resource.data.actorId == request.auth.uid &&
+                      request.resource.data.recipientId is string &&
+                      request.resource.data.recipientId.size() > 0 &&
+                      request.resource.data.type is string &&
+                      request.resource.data.title is string &&
+                      request.resource.data.message is string &&
+                      request.resource.data.read == false;
+
+      // Only the recipient can update, and only the `read` field
+      allow update: if isAuthenticated() &&
+                      request.auth.uid == resource.data.recipientId &&
+                      request.resource.data.read == true &&
+                      // Immutable fields
+                      request.resource.data.recipientId == resource.data.recipientId &&
+                      request.resource.data.actorId == resource.data.actorId &&
+                      request.resource.data.type == resource.data.type &&
+                      request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if isAuthenticated() &&
+                      request.auth.uid == resource.data.recipientId;
+    }
+
+    // ── Chats collection (Client Portal / Direct Messaging) ──────────────
+    // Security model:
+    //   READ   — only participants of the chat can read
+    //   CREATE — any authenticated user; must include themselves as participant
+    //   UPDATE — only participants (for lastMessage, unreadCount, etc.)
+    //   DELETE — not allowed; chats are preserved for dispute resolution
+    match /chats/{chatId} {
+      // Helper: caller is a participant
+      function isChatParticipant() {
+        return isAuthenticated() &&
+               request.auth.uid in resource.data.participants;
+      }
+
+      allow read: if isAuthenticated() &&
+                    request.auth.uid in resource.data.participants;
+
+      allow create: if isAuthenticated() &&
+                      request.auth.uid in request.resource.data.participants &&
+                      request.resource.data.participants is list &&
+                      request.resource.data.participants.size() == 2;
+
+      allow update: if isChatParticipant();
+
+      allow delete: if false;
+
+      // ── Messages subcollection ──────────────────────────────────────
+      // Security model:
+      //   READ   — only chat participants can read messages
+      //   CREATE — only chat participants can send messages; senderId must match auth
+      //   UPDATE/DELETE — not allowed; messages are immutable
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() &&
+                      request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+
+        allow create: if isAuthenticated() &&
+                        request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants &&
+                        request.resource.data.senderId == request.auth.uid &&
+                        // Text must be a string (can be empty if image is sent)
+                        request.resource.data.text is string &&
+                        request.resource.data.text.size() <= 5000 &&
+                        // Timestamp is required
+                        request.resource.data.createdAt is timestamp &&
+                        // If imageUrl is present, it must point to our Cloudinary account
+                        (!('imageUrl' in request.resource.data) ||
+                          isValidCloudinaryUrl(request.resource.data.imageUrl));
+
+        allow update: if false;
+        allow delete: if false;
+      }
     }
   }
 }

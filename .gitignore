@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Firebase config (contains API key — should not be in repo history)
+firebase-applet-config.json
+
+.vercel
